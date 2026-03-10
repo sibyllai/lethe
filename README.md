@@ -75,6 +75,8 @@ The built-in pattern catalog covers: AWS, GCP, Azure, GitHub, GitLab, Slack, Str
 
 ## Commands
 
+**Lethe never modifies your source files.** `scan` writes a separate clean copy to the output directory. `audit` is read-only — it reports findings and sets an exit code, nothing more. Your original repo is never touched.
+
 ### `lethe scan`
 
 ```

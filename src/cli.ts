@@ -92,8 +92,9 @@ function formatFindingsReport(findings: Finding[], groupBy: 'file' | 'type'): st
   return lines.join('\n');
 }
 
-function formatSummary(stats: ScanStats): string {
+function formatSummary(stats: ScanStats, mode: 'scan' | 'audit' = 'scan'): string {
   const lines: string[] = [];
+  const affectedLabel = mode === 'audit' ? 'Files with findings' : 'Files redacted';
 
   lines.push('');
   lines.push(chalk.bold('Summary'));
@@ -103,7 +104,7 @@ function formatSummary(stats: ScanStats): string {
   lines.push(`  Files excluded:    ${stats.filesExcluded}`);
   lines.push(`  Files passthrough: ${stats.filesPassthrough}`);
   lines.push(`  Files clean:       ${stats.filesClean}`);
-  lines.push(`  Files redacted:    ${stats.filesRedacted}`);
+  lines.push(`  ${affectedLabel.padEnd(17)}${stats.filesRedacted}`);
   lines.push('');
 
   const totalFindings = Object.values(stats.findingsBySeverity).reduce((a, b) => a + b, 0);
@@ -298,7 +299,7 @@ program
         } else {
           console.log(formatFindingsReport(result.findings, config.reporting.group_by));
           if (config.reporting.summary) {
-            console.log(formatSummary(result.stats));
+            console.log(formatSummary(result.stats, 'audit'));
           }
         }
       }
