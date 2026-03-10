@@ -137,6 +137,21 @@ function parseSeverity(value: string): Severity {
   return result;
 }
 
+/**
+ * Produce a sanitized copy of a ScanResult for JSON output.
+ * Replaces the full `match` field with a masked version to prevent
+ * the report itself from leaking the secrets it detected.
+ */
+function sanitizeResultForOutput(result: ScanResult): ScanResult {
+  return {
+    ...result,
+    findings: result.findings.map((f) => ({
+      ...f,
+      match: f.match ? maskValue(f.match) : undefined,
+    })),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // CLI program
 // ---------------------------------------------------------------------------
@@ -199,7 +214,7 @@ program
         if (opts.dryRun) {
           // Print findings report
           if (opts.format === 'json') {
-            console.log(JSON.stringify(result, null, 2));
+            console.log(JSON.stringify(sanitizeResultForOutput(result), null, 2));
           } else {
             console.log(formatFindingsReport(result.findings, config.reporting.group_by));
             if (config.reporting.summary) {
@@ -209,6 +224,15 @@ program
         } else {
           // Write redacted output
           const outputDir = opts.output ?? path.join(absPath, '.lethe-out');
+          const absOutput = path.resolve(outputDir);
+
+          // Warn if output overlaps with input
+          if (absOutput.startsWith(absPath + path.sep) || absOutput === absPath) {
+            console.error(chalk.yellow(
+              `Warning: output directory is inside the scan path. ` +
+              `Subsequent scans may process redacted output.`,
+            ));
+          }
 
           if (!opts.quiet) {
             console.log(chalk.dim(`Writing redacted output to ${outputDir}...`));
@@ -218,7 +242,7 @@ program
 
           if (!opts.quiet) {
             if (opts.format === 'json') {
-              console.log(JSON.stringify(result, null, 2));
+              console.log(JSON.stringify(sanitizeResultForOutput(result), null, 2));
             } else {
               console.log(formatFindingsReport(result.findings, config.reporting.group_by));
               if (config.reporting.summary) {
@@ -270,7 +294,7 @@ program
         totalFindings += result.findings.length;
 
         if (opts.format === 'json') {
-          console.log(JSON.stringify(result, null, 2));
+          console.log(JSON.stringify(sanitizeResultForOutput(result), null, 2));
         } else {
           console.log(formatFindingsReport(result.findings, config.reporting.group_by));
           if (config.reporting.summary) {

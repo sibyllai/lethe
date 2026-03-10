@@ -50,11 +50,13 @@ export function scanCustomRules(
     }
   }
 
+  const MAX_LINE_LENGTH = 10240;
   const findings: Finding[] = [];
   const lines = content.split('\n');
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx]!;
+    if (line.length > MAX_LINE_LENGTH) continue;
 
     for (const rule of compiled) {
       // Reset lastIndex for each line

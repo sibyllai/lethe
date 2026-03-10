@@ -29,6 +29,16 @@ export function detectCharset(data: string): 'hex' | 'base64' | 'general' {
 }
 
 /**
+ * Check if a buffer contains null bytes (indicating binary content).
+ */
+function bufferHasNullBytes(buf: Buffer, length: number): boolean {
+  for (let i = 0; i < length; i++) {
+    if (buf[i] === 0) return true;
+  }
+  return false;
+}
+
+/**
  * Check if a file is likely binary by reading its first 8KB and checking for null bytes.
  */
 export async function isBinaryFile(filepath: string): Promise<boolean> {
@@ -36,10 +46,7 @@ export async function isBinaryFile(filepath: string): Promise<boolean> {
   try {
     const buf = Buffer.alloc(8192);
     const { bytesRead } = await handle.read(buf, 0, 8192, 0);
-    for (let i = 0; i < bytesRead; i++) {
-      if (buf[i] === 0) return true;
-    }
-    return false;
+    return bufferHasNullBytes(buf, bytesRead);
   } finally {
     await handle.close();
   }
@@ -47,15 +54,30 @@ export async function isBinaryFile(filepath: string): Promise<boolean> {
 
 /**
  * Read a file safely, returning null if it's binary or exceeds maxSize.
+ * Uses a single file handle to avoid TOCTOU race conditions between
+ * stat, binary check, and read operations.
  */
 export async function readFileSafe(
   filepath: string,
   maxSize: number,
 ): Promise<string | null> {
-  const stat = await fs.stat(filepath);
-  if (stat.size > maxSize) return null;
-  if (await isBinaryFile(filepath)) return null;
-  return fs.readFile(filepath, 'utf-8');
+  const handle = await fs.open(filepath, 'r');
+  try {
+    const stat = await handle.stat();
+    if (stat.size > maxSize) return null;
+
+    // Read a probe for binary detection from the same handle
+    const probe = Buffer.alloc(Math.min(8192, stat.size));
+    const { bytesRead } = await handle.read(probe, 0, probe.length, 0);
+    if (bufferHasNullBytes(probe, bytesRead)) return null;
+
+    // Read full content from the same handle
+    const buf = Buffer.alloc(stat.size);
+    await handle.read(buf, 0, stat.size, 0);
+    return buf.toString('utf-8');
+  } finally {
+    await handle.close();
+  }
 }
 
 /**

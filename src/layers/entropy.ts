@@ -14,7 +14,7 @@ function extractCandidates(line: string): Array<{ value: string; column: number 
   const candidates: Array<{ value: string; column: number }> = [];
 
   // Match double-quoted strings
-  const doubleQuoted = /\"([^"\\]*(?:\\.[^"\\]*)*)\"/g;
+  const doubleQuoted = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
   let regexMatch = doubleQuoted.exec(line);
   while (regexMatch !== null) {
     if (regexMatch[1]) {
@@ -95,8 +95,11 @@ export function scanEntropy(
   const lines = content.split('\n');
   const minLength = config.entropy.min_length;
 
+  const MAX_LINE_LENGTH = 10240;
+
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx]!;
+    if (line.length > MAX_LINE_LENGTH) continue;
     const lineCandidates = extractCandidates(line);
 
     for (const candidate of lineCandidates) {

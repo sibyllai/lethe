@@ -37,7 +37,7 @@ export async function loadPatternCatalog(): Promise<PatternDefinition[]> {
   }
 
   const raw = await fs.readFile(catalogPath, 'utf-8');
-  const parsed = yaml.load(raw) as PatternCatalogFile;
+  const parsed = yaml.load(raw, { schema: yaml.DEFAULT_SCHEMA }) as PatternCatalogFile;
 
   if (!parsed || !Array.isArray(parsed.patterns)) {
     return [];
@@ -85,15 +85,20 @@ export function scanPatterns(
 
       compiled.push({ def, regex: new RegExp(patternStr, flags) });
     } catch {
-      // Skip patterns with invalid regex syntax
+      console.warn(`Warning: built-in pattern "${def.id}" has invalid regex syntax, skipping`);
     }
   }
+
+  // Cap line length to prevent slow regex matching on adversarial input.
+  // Lines beyond 10KB are unlikely to contain meaningful secret assignments.
+  const MAX_LINE_LENGTH = 10240;
 
   const findings: Finding[] = [];
   const lines = content.split('\n');
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx]!;
+    if (line.length > MAX_LINE_LENGTH) continue;
 
     for (const { def, regex } of compiled) {
       // Reset lastIndex for each line since we reuse the regex
