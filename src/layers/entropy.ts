@@ -14,7 +14,7 @@ function extractCandidates(line: string): Array<{ value: string; column: number 
   const candidates: Array<{ value: string; column: number }> = [];
 
   // Match double-quoted strings
-  const doubleQuoted = /\"([^"\\]*(?:\\.[^"\\]*)*)\"/g;
+  const doubleQuoted = /"([^"\\]*(?:\\.[^"\\]*)*)"/g;
   let regexMatch = doubleQuoted.exec(line);
   while (regexMatch !== null) {
     if (regexMatch[1]) {
