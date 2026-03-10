@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "description": "Pre-AI repo sanitization — redact secrets before your code meets the LLM",
   "license": "MIT",
+  "author": "{sibyllai}",
   "type": "module",
   "bin": {
     "lethe": "./dist/cli.js"
   },
   "main": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
