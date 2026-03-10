@@ -1,0 +1,84 @@
+version: "1"
+project:
+  name: lethe
+  description: Lethe (lethe, pronounced LEE-thee) is a lightweight, cross-platform CLI tool that sanitizes source code repositories before AI agent ingestion.
+session:
+  context_retention_days: 90
+  audit_retention_days: 365
+  session_retention_days: 365
+  end_on_claude_exit: true
+classifications: []
+boundaries:
+  - pattern: "*"
+    allowed_paths: []
+    forbidden_paths:
+      - .env*
+      - "**/*.pem"
+      - "**/*.key"
+    enforcement: advisory
+gates:
+  - id: dependency-approval
+    name: New Dependency Approval
+    trigger:
+      file_patterns:
+        - package.json
+        - requirements.txt
+        - go.mod
+        - Cargo.toml
+        - "**/pom.xml"
+    approval_mode: manual
+    timeout_seconds: 1800
+    notify:
+      - terminal
+  - id: security-files
+    name: Security File Changes
+    trigger:
+      file_patterns:
+        - .env*
+        - "**/auth/**"
+        - "**/security/**"
+        - "**/*.pem"
+        - "**/*.key"
+    approval_mode: manual
+    timeout_seconds: 1800
+    notify:
+      - terminal
+observability:
+  prometheus:
+    enabled: false
+    port: 9090
+  opentelemetry:
+    enabled: false
+    endpoint: http://localhost:4317
+  langfuse:
+    enabled: false
+    base_url: https://cloud.langfuse.com
+    flush_at: 15
+    flush_interval: 5000
+  webhooks: []
+transcript:
+  store: full
+  strip_thinking: false
+  ner_redaction: true
+  max_content_length: 50000
+  redaction_patterns:
+    - name: email
+      pattern: "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}"
+      replacement: "[EMAIL]"
+    - name: phone
+      pattern: \b\d{3}[\-.]?\d{3}[\-.]?\d{4}\b
+      replacement: "[PHONE]"
+    - name: ssn
+      pattern: \b\d{3}-\d{2}-\d{4}\b
+      replacement: "[SSN]"
+    - name: credit_card
+      pattern: \b\d{4}[\- ]?\d{4}[\- ]?\d{4}[\- ]?\d{4}\b
+      replacement: "[CREDIT_CARD]"
+    - name: api_key
+      pattern: (?:sk|pk|api|key|token|secret|password)[_\-]?[a-zA-Z0-9]{16,}
+      replacement: "[API_KEY]"
+dashboard:
+  port: 6100
+  host: localhost
+  open_browser: true
+plugins: []

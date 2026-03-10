@@ -1,0 +1,506 @@
+# Secret and Sensitive Data Detection Patterns
+# Curated from gitleaks and detect-secrets pattern sets
+# Compatible with JavaScript RegExp engine
+#
+# Severity levels:
+#   critical - Direct credential exposure, immediate risk
+#   high     - Sensitive tokens or connection strings
+#   medium   - Possible secrets, may produce false positives
+
+version: "1.0"
+
+patterns:
+  # ---------------------------------------------------------------------------
+  # AWS
+  # ---------------------------------------------------------------------------
+  - id: aws-access-key-id
+    name: AWS Access Key ID
+    pattern: '(?:^|[^A-Z0-9])((?:AKIA|ABIA|ACCA|ASIA)[A-Z0-9]{16})(?:[^A-Z0-9]|$)'
+    severity: critical
+    replacement: "[REDACTED:aws_access_key_id]"
+    description: >-
+      Detects AWS access key IDs that begin with AKIA, ABIA, ACCA, or ASIA
+      followed by 16 alphanumeric characters.
+
+  - id: aws-secret-access-key
+    name: AWS Secret Access Key
+    pattern: '(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{40})["\u0027]?'
+    severity: critical
+    replacement: "[REDACTED:aws_secret_key]"
+    description: >-
+      Matches AWS secret access keys assigned to common variable names.
+      Keys are 40-character base-64 strings.
+
+  - id: aws-session-token
+    name: AWS Session Token
+    pattern: '(?i)(?:aws_session_token|aws_security_token)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{100,})["\u0027]?'
+    severity: critical
+    replacement: "[REDACTED:aws_session_token]"
+    description: >-
+      Detects AWS temporary session tokens (STS). These are long base-64
+      strings typically over 100 characters.
+
+  # ---------------------------------------------------------------------------
+  # GCP
+  # ---------------------------------------------------------------------------
+  - id: gcp-service-account-key
+    name: GCP Service Account Key
+    pattern: '(?i)"type"\s*:\s*"service_account"'
+    severity: critical
+    replacement: "[REDACTED:gcp_service_account]"
+    description: >-
+      Detects GCP service account JSON key files by matching the
+      characteristic "type": "service_account" field.
+
+  - id: gcp-api-key
+    name: GCP API Key
+    pattern: 'AIza[0-9A-Za-z_-]{35}'
+    severity: critical
+    replacement: "[REDACTED:gcp_api_key]"
+    description: >-
+      Matches Google Cloud / Firebase API keys that begin with AIza
+      followed by 35 URL-safe base-64 characters.
+
+  # ---------------------------------------------------------------------------
+  # Azure
+  # ---------------------------------------------------------------------------
+  - id: azure-storage-account-key
+    name: Azure Storage Account Key
+    pattern: '(?i)(?:AccountKey|storage[_-]?(?:account)?[_-]?key)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{86,88})["\u0027]?'
+    severity: critical
+    replacement: "[REDACTED:azure_storage_key]"
+    description: >-
+      Detects Azure Storage account keys, which are 88-character base-64
+      strings assigned to AccountKey or similar variable names.
+
+  - id: azure-connection-string
+    name: Azure Connection String
+    pattern: '(?i)DefaultEndpointsProtocol=https?;AccountName=[^;]+;AccountKey=[A-Za-z0-9/+=]{86,88}'
+    severity: critical
+    replacement: "[REDACTED:azure_connection_string]"
+    description: >-
+      Matches Azure Storage connection strings containing endpoint protocol,
+      account name, and account key.
+
+  - id: azure-client-secret
+    name: Azure AD Client Secret
+    pattern: '(?i)(?:client[_-]?secret|azure[_-]?secret)\s*[:=]\s*["\u0027]?([A-Za-z0-9~._-]{34,40})["\u0027]?'
+    severity: high
+    replacement: "[REDACTED:azure_client_secret]"
+    description: >-
+      Detects Azure AD client secrets assigned to common variable names.
+
+  # ---------------------------------------------------------------------------
+  # GitHub
+  # ---------------------------------------------------------------------------
+  - id: github-pat-classic
+    name: GitHub Personal Access Token (Classic)
+    pattern: 'ghp_[A-Za-z0-9]{36}'
+    severity: critical
+    replacement: "[REDACTED:github_pat]"
+    description: >-
+      Matches GitHub classic personal access tokens starting with ghp_.
+
+  - id: github-oauth-token
+    name: GitHub OAuth Access Token
+    pattern: 'gho_[A-Za-z0-9]{36}'
+    severity: critical
+    replacement: "[REDACTED:github_oauth]"
+    description: >-
+      Matches GitHub OAuth access tokens starting with gho_.
+
+  - id: github-fine-grained-pat
+    name: GitHub Fine-Grained PAT
+    pattern: 'github_pat_[A-Za-z0-9_]{82}'
+    severity: critical
+    replacement: "[REDACTED:github_fine_grained_pat]"
+    description: >-
+      Matches GitHub fine-grained personal access tokens starting with
+      github_pat_ followed by 82 characters.
+
+  - id: github-app-token
+    name: GitHub App Token
+    pattern: '(?:ghu|ghs)_[A-Za-z0-9]{36}'
+    severity: critical
+    replacement: "[REDACTED:github_app_token]"
+    description: >-
+      Matches GitHub App user-to-server (ghu_) and server-to-server (ghs_)
+      tokens.
+
+  # ---------------------------------------------------------------------------
+  # GitLab
+  # ---------------------------------------------------------------------------
+  - id: gitlab-pat
+    name: GitLab Personal Access Token
+    pattern: 'glpat-[A-Za-z0-9_-]{20}'
+    severity: critical
+    replacement: "[REDACTED:gitlab_pat]"
+    description: >-
+      Matches GitLab personal access tokens starting with glpat-.
+
+  - id: gitlab-pipeline-token
+    name: GitLab Pipeline Trigger Token
+    pattern: 'glptt-[A-Za-z0-9_-]{40}'
+    severity: critical
+    replacement: "[REDACTED:gitlab_pipeline_token]"
+    description: >-
+      Matches GitLab pipeline trigger tokens starting with glptt-.
+
+  # ---------------------------------------------------------------------------
+  # Slack
+  # ---------------------------------------------------------------------------
+  - id: slack-bot-token
+    name: Slack Bot Token
+    pattern: 'xoxb-[0-9]{10,13}-[0-9]{10,13}-[A-Za-z0-9]{24}'
+    severity: high
+    replacement: "[REDACTED:slack_bot_token]"
+    description: >-
+      Matches Slack bot tokens in the xoxb- format.
+
+  - id: slack-user-token
+    name: Slack User Token
+    pattern: 'xoxp-[0-9]{10,13}-[0-9]{10,13}-[0-9]{10,13}-[a-f0-9]{32}'
+    severity: high
+    replacement: "[REDACTED:slack_user_token]"
+    description: >-
+      Matches Slack user tokens in the xoxp- format.
+
+  - id: slack-webhook-url
+    name: Slack Webhook URL
+    pattern: 'https://hooks\.slack\.com/services/T[A-Z0-9]{8,}/B[A-Z0-9]{8,}/[A-Za-z0-9]{24}'
+    severity: high
+    replacement: "[REDACTED:slack_webhook]"
+    description: >-
+      Matches Slack incoming webhook URLs.
+
+  # ---------------------------------------------------------------------------
+  # JWT
+  # ---------------------------------------------------------------------------
+  - id: jwt-token
+    name: JSON Web Token
+    pattern: 'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
+    severity: high
+    replacement: "[REDACTED:jwt]"
+    description: >-
+      Detects JSON Web Tokens by matching the three base64url-encoded
+      segments starting with eyJ (base64 for {"").
+
+  # ---------------------------------------------------------------------------
+  # Private Keys
+  # ---------------------------------------------------------------------------
+  - id: private-key-rsa
+    name: RSA Private Key
+    pattern: '-----BEGIN RSA PRIVATE KEY-----'
+    severity: critical
+    replacement: "[REDACTED:rsa_private_key]"
+    description: >-
+      Detects the header of PEM-encoded RSA private keys.
+
+  - id: private-key-ec
+    name: EC Private Key
+    pattern: '-----BEGIN EC PRIVATE KEY-----'
+    severity: critical
+    replacement: "[REDACTED:ec_private_key]"
+    description: >-
+      Detects the header of PEM-encoded EC (Elliptic Curve) private keys.
+
+  - id: private-key-dsa
+    name: DSA Private Key
+    pattern: '-----BEGIN DSA PRIVATE KEY-----'
+    severity: critical
+    replacement: "[REDACTED:dsa_private_key]"
+    description: >-
+      Detects the header of PEM-encoded DSA private keys.
+
+  - id: private-key-generic
+    name: Generic Private Key
+    pattern: '-----BEGIN PRIVATE KEY-----'
+    severity: critical
+    replacement: "[REDACTED:private_key]"
+    description: >-
+      Detects the header of PEM-encoded PKCS#8 private keys.
+
+  - id: private-key-pgp
+    name: PGP Private Key Block
+    pattern: '-----BEGIN PGP PRIVATE KEY BLOCK-----'
+    severity: critical
+    replacement: "[REDACTED:pgp_private_key]"
+    description: >-
+      Detects the header of PGP/GPG private key blocks.
+
+  - id: private-key-openssh
+    name: OpenSSH Private Key
+    pattern: '-----BEGIN OPENSSH PRIVATE KEY-----'
+    severity: critical
+    replacement: "[REDACTED:openssh_private_key]"
+    description: >-
+      Detects the header of OpenSSH private keys.
+
+  # ---------------------------------------------------------------------------
+  # Database Connection Strings
+  # ---------------------------------------------------------------------------
+  - id: postgres-connection-string
+    name: PostgreSQL Connection String
+    pattern: '(?i)postgres(?:ql)?://[^\s"''\x60:]+:[^\s"''\x60@]+@[^\s"''\x60]+'
+    severity: high
+    replacement: "[REDACTED:postgres_uri]"
+    description: >-
+      Matches PostgreSQL connection URIs containing embedded credentials.
+
+  - id: mysql-connection-string
+    name: MySQL Connection String
+    pattern: '(?i)mysql://[^\s"''\x60:]+:[^\s"''\x60@]+@[^\s"''\x60]+'
+    severity: high
+    replacement: "[REDACTED:mysql_uri]"
+    description: >-
+      Matches MySQL connection URIs containing embedded credentials.
+
+  - id: mongodb-connection-string
+    name: MongoDB Connection String
+    pattern: '(?i)mongodb(?:\+srv)?://[^\s"''\x60:]+:[^\s"''\x60@]+@[^\s"''\x60]+'
+    severity: high
+    replacement: "[REDACTED:mongodb_uri]"
+    description: >-
+      Matches MongoDB connection URIs containing embedded credentials.
+
+  - id: redis-connection-string
+    name: Redis Connection String
+    pattern: '(?i)redis(?:s)?://[^\s"''\x60:]*:[^\s"''\x60@]+@[^\s"''\x60]+'
+    severity: high
+    replacement: "[REDACTED:redis_uri]"
+    description: >-
+      Matches Redis connection URIs containing embedded credentials.
+
+  # ---------------------------------------------------------------------------
+  # Generic Secrets
+  # ---------------------------------------------------------------------------
+  - id: generic-api-key
+    name: Generic API Key Assignment
+    pattern: '(?i)(?:api[_-]?key|apikey)\s*[:=]\s*["\u0027]([A-Za-z0-9_\-]{20,})["\u0027]'
+    severity: high
+    replacement: "[REDACTED:api_key]"
+    description: >-
+      Matches generic API key assignments in code or configuration files
+      where a variable named api_key or similar is set to a string value.
+
+  - id: generic-secret
+    name: Generic Secret Assignment
+    pattern: '(?i)(?:secret|secret[_-]?key)\s*[:=]\s*["\u0027]([^\s"\u0027]{8,})["\u0027]'
+    severity: high
+    replacement: "[REDACTED:secret]"
+    description: >-
+      Matches generic secret assignments where a variable named secret or
+      secret_key is set to a non-trivial string value.
+
+  - id: generic-password
+    name: Generic Password Assignment
+    pattern: '(?i)(?:password|passwd|pwd)\s*[:=]\s*["\u0027]([^\s"\u0027]{8,})["\u0027]'
+    severity: medium
+    replacement: "[REDACTED:password]"
+    description: >-
+      Matches password variable assignments. Medium severity due to higher
+      false-positive rate in test fixtures and documentation.
+
+  - id: bearer-token
+    name: Bearer Token in Code
+    pattern: '(?i)(?:bearer|authorization)\s*[:=]\s*["\u0027]?Bearer\s+([A-Za-z0-9_.~+/=-]{20,})["\u0027]?'
+    severity: high
+    replacement: "[REDACTED:bearer_token]"
+    description: >-
+      Detects Bearer tokens assigned to authorization headers or variables.
+
+  - id: basic-auth-url
+    name: Basic Auth in URL
+    pattern: '(?i)https?://[^\s:]+:[^\s@]+@[A-Za-z0-9.-]+(?::\d+)?(?:/[^\s]*)?'
+    severity: high
+    replacement: "[REDACTED:basic_auth_url]"
+    description: >-
+      Matches URLs with embedded basic authentication credentials
+      (username:password@host).
+
+  # ---------------------------------------------------------------------------
+  # SaaS / Third-Party API Keys
+  # ---------------------------------------------------------------------------
+  - id: sendgrid-api-key
+    name: SendGrid API Key
+    pattern: 'SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}'
+    severity: high
+    replacement: "[REDACTED:sendgrid_key]"
+    description: >-
+      Matches SendGrid API keys in their characteristic SG.xxx.xxx format.
+
+  - id: twilio-api-key
+    name: Twilio API Key
+    pattern: 'SK[a-f0-9]{32}'
+    severity: high
+    replacement: "[REDACTED:twilio_key]"
+    description: >-
+      Matches Twilio API key SIDs starting with SK followed by 32 hex chars.
+
+  - id: stripe-secret-key
+    name: Stripe Secret Key
+    pattern: '(?:sk_live|sk_test)_[A-Za-z0-9]{24,}'
+    severity: high
+    replacement: "[REDACTED:stripe_secret_key]"
+    description: >-
+      Matches Stripe secret API keys for both live and test environments.
+
+  - id: stripe-restricted-key
+    name: Stripe Restricted API Key
+    pattern: 'rk_(?:live|test)_[A-Za-z0-9]{24,}'
+    severity: high
+    replacement: "[REDACTED:stripe_restricted_key]"
+    description: >-
+      Matches Stripe restricted API keys for both live and test environments.
+
+  - id: mailgun-api-key
+    name: Mailgun API Key
+    pattern: 'key-[A-Za-z0-9]{32}'
+    severity: high
+    replacement: "[REDACTED:mailgun_key]"
+    description: >-
+      Matches Mailgun API keys starting with key- followed by 32 alphanumeric
+      characters.
+
+  - id: mailchimp-api-key
+    name: Mailchimp API Key
+    pattern: '[a-f0-9]{32}-us\d{1,2}'
+    severity: high
+    replacement: "[REDACTED:mailchimp_key]"
+    description: >-
+      Matches Mailchimp API keys consisting of 32 hex characters followed by
+      a datacenter identifier like -us1 through -us99.
+
+  # ---------------------------------------------------------------------------
+  # Package Registry Tokens
+  # ---------------------------------------------------------------------------
+  - id: npm-token
+    name: NPM Access Token
+    pattern: 'npm_[A-Za-z0-9]{36}'
+    severity: critical
+    replacement: "[REDACTED:npm_token]"
+    description: >-
+      Matches NPM access tokens starting with npm_ followed by 36
+      alphanumeric characters.
+
+  - id: npm-token-legacy
+    name: NPM Token (Legacy .npmrc)
+    pattern: '(?i)//registry\.npmjs\.org/:_authToken=[A-Za-z0-9-]{36}'
+    severity: critical
+    replacement: "[REDACTED:npm_token_legacy]"
+    description: >-
+      Matches legacy NPM tokens found in .npmrc configuration files.
+
+  - id: pypi-token
+    name: PyPI API Token
+    pattern: 'pypi-[A-Za-z0-9_-]{100,}'
+    severity: critical
+    replacement: "[REDACTED:pypi_token]"
+    description: >-
+      Matches PyPI API tokens starting with pypi- followed by 100+
+      characters.
+
+  - id: nuget-api-key
+    name: NuGet API Key
+    pattern: 'oy2[A-Za-z0-9]{43}'
+    severity: high
+    replacement: "[REDACTED:nuget_key]"
+    description: >-
+      Matches NuGet API keys starting with oy2 followed by 43 characters.
+
+  # ---------------------------------------------------------------------------
+  # Container / PaaS
+  # ---------------------------------------------------------------------------
+  - id: docker-registry-auth
+    name: Docker Registry Auth
+    pattern: '(?i)(?:"auth"\s*:\s*"[A-Za-z0-9+/=]{20,}")'
+    severity: high
+    replacement: "[REDACTED:docker_auth]"
+    description: >-
+      Detects base64-encoded Docker registry authentication credentials
+      in Docker config.json files.
+
+  - id: heroku-api-key
+    name: Heroku API Key
+    pattern: '(?i)(?:heroku[_-]?api[_-]?key|heroku[_-]?secret)\s*[:=]\s*["\u0027]?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})["\u0027]?'
+    severity: high
+    replacement: "[REDACTED:heroku_key]"
+    description: >-
+      Matches Heroku API keys in UUID format assigned to known variable names.
+
+  - id: digitalocean-pat
+    name: DigitalOcean Personal Access Token
+    pattern: 'dop_v1_[a-f0-9]{64}'
+    severity: high
+    replacement: "[REDACTED:digitalocean_pat]"
+    description: >-
+      Matches DigitalOcean personal access tokens starting with dop_v1_.
+
+  - id: digitalocean-oauth
+    name: DigitalOcean OAuth Token
+    pattern: 'doo_v1_[a-f0-9]{64}'
+    severity: high
+    replacement: "[REDACTED:digitalocean_oauth]"
+    description: >-
+      Matches DigitalOcean OAuth tokens starting with doo_v1_.
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure / IaC
+  # ---------------------------------------------------------------------------
+  - id: terraform-state-secret
+    name: Terraform State Secret
+    pattern: '(?i)(?:"sensitive_attributes"|"secret"\s*:\s*"[^"]{8,}")'
+    severity: high
+    replacement: "[REDACTED:terraform_secret]"
+    description: >-
+      Detects sensitive values in Terraform state files by matching
+      sensitive_attributes markers or secret fields.
+
+  - id: ssh-password-in-uri
+    name: SSH Password in Connection String
+    pattern: '(?i)ssh://[^\s:]+:[^\s@]+@[^\s]+'
+    severity: high
+    replacement: "[REDACTED:ssh_uri]"
+    description: >-
+      Matches SSH connection URIs with embedded passwords.
+
+  # ---------------------------------------------------------------------------
+  # OAuth / Auth Protocols
+  # ---------------------------------------------------------------------------
+  - id: oauth-client-secret
+    name: OAuth Client Secret
+    pattern: '(?i)(?:client[_-]?secret|consumer[_-]?secret)\s*[:=]\s*["\u0027]([A-Za-z0-9_\-]{16,})["\u0027]'
+    severity: high
+    replacement: "[REDACTED:oauth_client_secret]"
+    description: >-
+      Matches OAuth client or consumer secrets assigned in code or config.
+
+  # ---------------------------------------------------------------------------
+  # Cryptographic Material
+  # ---------------------------------------------------------------------------
+  - id: hmac-secret
+    name: HMAC Secret
+    pattern: '(?i)(?:hmac[_-]?(?:secret|key))\s*[:=]\s*["\u0027]([A-Za-z0-9+/=_\-]{16,})["\u0027]'
+    severity: medium
+    replacement: "[REDACTED:hmac_secret]"
+    description: >-
+      Matches HMAC secret or key assignments. Medium severity as HMAC keys
+      vary widely in format.
+
+  - id: encryption-key
+    name: Encryption Key in Code
+    pattern: '(?i)(?:encryption[_-]?key|aes[_-]?key|cipher[_-]?key)\s*[:=]\s*["\u0027]([A-Za-z0-9+/=_\-]{16,})["\u0027]'
+    severity: medium
+    replacement: "[REDACTED:encryption_key]"
+    description: >-
+      Matches encryption key assignments (AES, cipher, etc.) in code or
+      configuration files.
+
+  - id: password-in-variable
+    name: Password in Variable Assignment
+    pattern: '(?i)(?:db[_-]?pass(?:word)?|admin[_-]?pass(?:word)?|user[_-]?pass(?:word)?|login[_-]?pass(?:word)?)\s*[:=]\s*["\u0027]([^\s"\u0027]{6,})["\u0027]'
+    severity: medium
+    replacement: "[REDACTED:password]"
+    description: >-
+      Matches common password variable patterns like db_password, admin_pass,
+      etc. Medium severity due to potential false positives in test code.

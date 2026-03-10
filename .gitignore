@@ -1,0 +1,22 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.lethe.yaml
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage
+coverage/
+
+# Environment
+.env
+.env.*

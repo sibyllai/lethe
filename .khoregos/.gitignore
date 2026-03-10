@@ -1,0 +1,12 @@
+# Khoregos runtime gitignore
+#
+# The .khoregos/ directory is intentionally versioned. It signals to
+# collaborators that this project uses Khoregos governance. Only runtime
+# artifacts (database, signing key, daemon state, PID files) are ignored.
+# To export governance data for git, use: k6s export --format git
+
+*.db
+*.db-*
+daemon.*
+*.pid
+signing.key

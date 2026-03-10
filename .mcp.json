@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "khoregos": {
+      "command": "/Users/davybraun/.nvm/versions/node/v20.9.0/bin/k6s",
+      "args": [
+        "mcp",
+        "serve",
+        "--project-root",
+        "/Users/davybraun/Code/projects/lethe/lethe"
+      ]
+    }
+  }
+}
