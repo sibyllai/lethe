@@ -95,8 +95,11 @@ export function scanEntropy(
   const lines = content.split('\n');
   const minLength = config.entropy.min_length;
 
+  const MAX_LINE_LENGTH = 10240;
+
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx]!;
+    if (line.length > MAX_LINE_LENGTH) continue;
     const lineCandidates = extractCandidates(line);
 
     for (const candidate of lineCandidates) {

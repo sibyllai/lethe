@@ -128,7 +128,7 @@ export async function loadConfig(
   }
 
   const raw = await fs.readFile(configPath, 'utf-8');
-  const parsed = yaml.load(raw);
+  const parsed = yaml.load(raw, { schema: yaml.DEFAULT_SCHEMA });
 
   if (parsed === null || parsed === undefined) {
     return LetheConfigSchema.parse({});
