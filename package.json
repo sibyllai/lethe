@@ -1,12 +1,12 @@
 {
   "name": "@sibyllai/lethe",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Pre-AI repo sanitization — redact secrets before your code meets the LLM",
   "license": "MIT",
   "author": "{sibyllai}",
   "type": "module",
   "bin": {
-    "lethe": "./dist/cli.js"
+    "lethe": "dist/cli.js"
   },
   "main": "./dist/index.js",
   "publishConfig": {
