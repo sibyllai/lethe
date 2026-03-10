@@ -205,4 +205,4 @@ MIT
 
 ---
 
-Built by [Sibyllai](https://github.com/sibyllai).
+Built by [Sibyllai](https://github.com/sibyllai). Part of the Sibyllai AI tools series.
