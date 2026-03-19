@@ -24,7 +24,7 @@ patterns:
 
   - id: aws-secret-access-key
     name: AWS Secret Access Key
-    pattern: '(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{40})["\u0027]?'
+    pattern: "(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\\s*[:=]\\s*[\"']?([A-Za-z0-9/+=]{40})[\"']?"
     severity: critical
     replacement: "[REDACTED:aws_secret_key]"
     description: >-
@@ -33,7 +33,7 @@ patterns:
 
   - id: aws-session-token
     name: AWS Session Token
-    pattern: '(?i)(?:aws_session_token|aws_security_token)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{100,})["\u0027]?'
+    pattern: "(?i)(?:aws_session_token|aws_security_token)\\s*[:=]\\s*[\"']?([A-Za-z0-9/+=]{100,})[\"']?"
     severity: critical
     replacement: "[REDACTED:aws_session_token]"
     description: >-
@@ -66,7 +66,7 @@ patterns:
   # ---------------------------------------------------------------------------
   - id: azure-storage-account-key
     name: Azure Storage Account Key
-    pattern: '(?i)(?:AccountKey|storage[_-]?(?:account)?[_-]?key)\s*[:=]\s*["\u0027]?([A-Za-z0-9/+=]{86,88})["\u0027]?'
+    pattern: "(?i)(?:AccountKey|storage[_-]?(?:account)?[_-]?key)\\s*[:=]\\s*[\"']?([A-Za-z0-9/+=]{86,88})[\"']?"
     severity: critical
     replacement: "[REDACTED:azure_storage_key]"
     description: >-
@@ -84,7 +84,7 @@ patterns:
 
   - id: azure-client-secret
     name: Azure AD Client Secret
-    pattern: '(?i)(?:client[_-]?secret|azure[_-]?secret)\s*[:=]\s*["\u0027]?([A-Za-z0-9~._-]{34,40})["\u0027]?'
+    pattern: "(?i)(?:client[_-]?secret|azure[_-]?secret)\\s*[:=]\\s*[\"']?([A-Za-z0-9~._-]{34,40})[\"']?"
     severity: high
     replacement: "[REDACTED:azure_client_secret]"
     description: >-
@@ -276,34 +276,38 @@ patterns:
   # ---------------------------------------------------------------------------
   - id: generic-api-key
     name: Generic API Key Assignment
-    pattern: '(?i)(?:api[_-]?key|apikey)\s*[:=]\s*["\u0027]([A-Za-z0-9_\-]{20,})["\u0027]'
+    pattern: "(?i)[\"']?(?:api[_-]?key|apikey)[\"']?\\s*[:=]\\s*[\"']([A-Za-z0-9_\\-]{20,})[\"']"
     severity: high
     replacement: "[REDACTED:api_key]"
     description: >-
       Matches generic API key assignments in code or configuration files
       where a variable named api_key or similar is set to a string value.
+      Handles both bare keys (api_key=) and JSON quoted keys ("api_key":).
 
   - id: generic-secret
     name: Generic Secret Assignment
-    pattern: '(?i)(?:secret|secret[_-]?key)\s*[:=]\s*["\u0027]([^\s"\u0027]{8,})["\u0027]'
+    pattern: "(?i)[\"']?(?:secret|secret[_-]?key)[\"']?\\s*[:=]\\s*[\"']([^\\s\"']{1,})[\"']"
     severity: high
     replacement: "[REDACTED:secret]"
     description: >-
       Matches generic secret assignments where a variable named secret or
-      secret_key is set to a non-trivial string value.
+      secret_key is set to any non-empty string value. Handles both bare
+      keys and JSON quoted keys. Low minimum length because the key name
+      itself is strong signal.
 
   - id: generic-password
     name: Generic Password Assignment
-    pattern: '(?i)(?:password|passwd|pwd)\s*[:=]\s*["\u0027]([^\s"\u0027]{8,})["\u0027]'
+    pattern: "(?i)[\"']?(?:password|passwd|pwd)[\"']?\\s*[:=]\\s*[\"']([^\\s\"']{1,})[\"']"
     severity: medium
     replacement: "[REDACTED:password]"
     description: >-
-      Matches password variable assignments. Medium severity due to higher
-      false-positive rate in test fixtures and documentation.
+      Matches password variable assignments. Handles both bare keys and
+      JSON quoted keys. Low minimum length because the key name itself
+      is strong signal — even short passwords should be redacted.
 
   - id: bearer-token
     name: Bearer Token in Code
-    pattern: '(?i)(?:bearer|authorization)\s*[:=]\s*["\u0027]?Bearer\s+([A-Za-z0-9_.~+/=-]{20,})["\u0027]?'
+    pattern: "(?i)(?:bearer|authorization)\\s*[:=]\\s*[\"']?Bearer\\s+([A-Za-z0-9_.~+/=-]{20,})[\"']?"
     severity: high
     replacement: "[REDACTED:bearer_token]"
     description: >-
@@ -422,7 +426,7 @@ patterns:
 
   - id: heroku-api-key
     name: Heroku API Key
-    pattern: '(?i)(?:heroku[_-]?api[_-]?key|heroku[_-]?secret)\s*[:=]\s*["\u0027]?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})["\u0027]?'
+    pattern: "(?i)(?:heroku[_-]?api[_-]?key|heroku[_-]?secret)\\s*[:=]\\s*[\"']?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})[\"']?"
     severity: high
     replacement: "[REDACTED:heroku_key]"
     description: >-
@@ -469,38 +473,40 @@ patterns:
   # ---------------------------------------------------------------------------
   - id: oauth-client-secret
     name: OAuth Client Secret
-    pattern: '(?i)(?:client[_-]?secret|consumer[_-]?secret)\s*[:=]\s*["\u0027]([A-Za-z0-9_\-]{16,})["\u0027]'
+    pattern: "(?i)[\"']?(?:client[_-]?secret|consumer[_-]?secret)[\"']?\\s*[:=]\\s*[\"']([A-Za-z0-9_\\-]{16,})[\"']"
     severity: high
     replacement: "[REDACTED:oauth_client_secret]"
     description: >-
       Matches OAuth client or consumer secrets assigned in code or config.
+      Handles both bare keys and JSON quoted keys.
 
   # ---------------------------------------------------------------------------
   # Cryptographic Material
   # ---------------------------------------------------------------------------
   - id: hmac-secret
     name: HMAC Secret
-    pattern: '(?i)(?:hmac[_-]?(?:secret|key))\s*[:=]\s*["\u0027]([A-Za-z0-9+/=_\-]{16,})["\u0027]'
+    pattern: "(?i)[\"']?(?:hmac[_-]?(?:secret|key))[\"']?\\s*[:=]\\s*[\"']([A-Za-z0-9+/=_\\-]{16,})[\"']"
     severity: medium
     replacement: "[REDACTED:hmac_secret]"
     description: >-
       Matches HMAC secret or key assignments. Medium severity as HMAC keys
-      vary widely in format.
+      vary widely in format. Handles JSON quoted keys.
 
   - id: encryption-key
     name: Encryption Key in Code
-    pattern: '(?i)(?:encryption[_-]?key|aes[_-]?key|cipher[_-]?key)\s*[:=]\s*["\u0027]([A-Za-z0-9+/=_\-]{16,})["\u0027]'
+    pattern: "(?i)[\"']?(?:encryption[_-]?key|aes[_-]?key|cipher[_-]?key)[\"']?\\s*[:=]\\s*[\"']([A-Za-z0-9+/=_\\-]{16,})[\"']"
     severity: medium
     replacement: "[REDACTED:encryption_key]"
     description: >-
       Matches encryption key assignments (AES, cipher, etc.) in code or
-      configuration files.
+      configuration files. Handles JSON quoted keys.
 
   - id: password-in-variable
     name: Password in Variable Assignment
-    pattern: '(?i)(?:db[_-]?pass(?:word)?|admin[_-]?pass(?:word)?|user[_-]?pass(?:word)?|login[_-]?pass(?:word)?)\s*[:=]\s*["\u0027]([^\s"\u0027]{6,})["\u0027]'
+    pattern: "(?i)[\"']?(?:db[_-]?pass(?:word)?|admin[_-]?pass(?:word)?|user[_-]?pass(?:word)?|login[_-]?pass(?:word)?)[\"']?\\s*[:=]\\s*[\"']([^\\s\"']{1,})[\"']"
     severity: medium
     replacement: "[REDACTED:password]"
     description: >-
       Matches common password variable patterns like db_password, admin_pass,
-      etc. Medium severity due to potential false positives in test code.
+      etc. Handles JSON quoted keys. Low minimum length because the key name
+      itself is strong signal.

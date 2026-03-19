@@ -93,3 +93,61 @@ describe('Scan options', () => {
     expect(resultHigh.findings.length).toBeLessThanOrEqual(resultAll.findings.length);
   });
 });
+
+describe('Integration: JSON config files (appsettings.json)', () => {
+  test('detects Password field in appsettings.json', async () => {
+    const config = await loadConfig(REPO_BASIC);
+    const result = await scanRepo(REPO_BASIC, config, { noEntropy: true });
+
+    const passwordFindings = result.findings.filter(
+      (f) => f.file === 'appsettings.json' && f.type === 'generic-password',
+    );
+    expect(passwordFindings.length).toBeGreaterThan(0);
+    expect(passwordFindings[0]!.match).toBe('S3cretMong0Pass!');
+  });
+
+  test('detects Secret field in appsettings.json', async () => {
+    const config = await loadConfig(REPO_BASIC);
+    const result = await scanRepo(REPO_BASIC, config, { noEntropy: true });
+
+    const secretFindings = result.findings.filter(
+      (f) => f.file === 'appsettings.json' && f.type === 'generic-secret',
+    );
+    expect(secretFindings.length).toBeGreaterThan(0);
+  });
+
+  test('detects SecretKey field in appsettings.json', async () => {
+    const config = await loadConfig(REPO_BASIC);
+    const result = await scanRepo(REPO_BASIC, config, { noEntropy: true });
+
+    // "SecretKey" should match generic-secret (secret_key variant)
+    const secretKeyFindings = result.findings.filter(
+      (f) =>
+        f.file === 'appsettings.json' &&
+        f.type === 'generic-secret' &&
+        f.match?.includes('jwt-signing'),
+    );
+    expect(secretKeyFindings.length).toBeGreaterThan(0);
+  });
+
+  test('does not flag non-sensitive JSON fields', async () => {
+    const config = await loadConfig(REPO_BASIC);
+    const result = await scanRepo(REPO_BASIC, config, { noEntropy: true });
+
+    // "MachineName", "ConsumerGroupId", "Issuer" should NOT be flagged
+    const machineFindings = result.findings.filter(
+      (f) => f.file === 'appsettings.json' && f.match === 'gvapamapp13d',
+    );
+    expect(machineFindings.length).toBe(0);
+  });
+
+  test('detects Redis connection string in appsettings.json', async () => {
+    const config = await loadConfig(REPO_BASIC);
+    const result = await scanRepo(REPO_BASIC, config, { noEntropy: true });
+
+    const redisFindings = result.findings.filter(
+      (f) => f.file === 'appsettings.json' && f.type === 'redis-connection-string',
+    );
+    expect(redisFindings.length).toBeGreaterThan(0);
+  });
+});
